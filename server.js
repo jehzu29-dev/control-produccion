@@ -14,7 +14,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Inicializar PostgreSQL
+// Inicializar tabla en PostgreSQL
 const initDb = async () => {
   try {
     await pool.query(`
@@ -24,7 +24,7 @@ const initDb = async () => {
         fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    console.log('Tabla "items" lista en PostgreSQL.');
+    console.log('Tabla "items" sincronizada en PostgreSQL.');
   } catch (err) {
     console.error('Error al inicializar la base de datos:', err);
   }
@@ -32,45 +32,16 @@ const initDb = async () => {
 
 initDb();
 
-// Función que normaliza casillas y campos para que el JS del navegador los reconozca al 100%
-const normalizeData = (data, id) => {
-  if (!data || typeof data !== 'object') data = {};
-  
-  const clean = { ...data };
-  
-  // Asegurar IDs en ambos formatos
-  clean.id = parseInt(id);
-  clean._id = String(id);
-  clean.id_item = clean.id_item || clean.codigo || clean.pieza || '';
-
-  // Convertir valores booleanos a compatibilidad doble (boolean/number)
-  const boolKeys = [
-    'se_pidio', 'sePidio', 
-    'llego', 
-    'paso_fab', 'pasoFab', 
-    'termino_fab', 'terminoFab', 
-    'mando_trat', 'mandoTrat', 
-    'regreso_trat', 'regresoTrat', 
-    'finalizacion', 'finalizado'
-  ];
-
-  boolKeys.forEach(key => {
-    if (key in clean) {
-      const val = clean[key];
-      if (val === true || val === 'true' || val === 1 || val === '1') {
-        clean[key] = true;
-      } else if (val === false || val === 'false' || val === 0 || val === '0') {
-        clean[key] = false;
-      }
-    }
-  });
-
-  return clean;
-};
-
+// Devuelve los datos originales intactos agregando solo los mapeos de ID estándar
 const formatItemResponse = (row) => {
   if (!row) return null;
-  return normalizeData(row.datos, row.id);
+  const datos = row.datos || {};
+  return {
+    ...datos,
+    id: row.id,
+    _id: row.id,
+    id_item: datos.id_item || datos.codigo || datos.pieza || row.id
+  };
 };
 
 // --- RUTAS API ---
@@ -94,10 +65,10 @@ const guardarNuevoItem = async (body) => {
   const { rows } = await pool.query(insertQuery, [JSON.stringify(body)]);
   const nuevoId = rows[0].id;
   
-  const datosNormalizados = normalizeData(body, nuevoId);
-  await pool.query('UPDATE items SET datos = $1 WHERE id = $2', [JSON.stringify(datosNormalizados), nuevoId]);
+  const datosCompletos = { ...body, id: nuevoId, _id: nuevoId };
+  await pool.query('UPDATE items SET datos = $1 WHERE id = $2', [JSON.stringify(datosCompletos), nuevoId]);
   
-  return datosNormalizados;
+  return formatItemResponse({ id: nuevoId, datos: datosCompletos });
 };
 
 app.post('/api/items', async (req, res) => {
@@ -125,8 +96,7 @@ const actualizarItem = async (id, camposNuevos) => {
   }
 
   const datosExistentes = rows[0].datos || {};
-  const datosFusionados = { ...datosExistentes, ...camposNuevos };
-  const datosNormalizados = normalizeData(datosFusionados, id);
+  const datosFusionados = { ...datosExistentes, ...camposNuevos, id: parseInt(id), _id: parseInt(id) };
 
   const updateQuery = `
     UPDATE items
@@ -134,7 +104,7 @@ const actualizarItem = async (id, camposNuevos) => {
     WHERE id = $2
     RETURNING *;
   `;
-  const result = await pool.query(updateQuery, [JSON.stringify(datosNormalizados), id]);
+  const result = await pool.query(updateQuery, [JSON.stringify(datosFusionados), id]);
   return formatItemResponse(result.rows[0]);
 };
 
