@@ -1,115 +1,98 @@
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');
 const path = require('path');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
+// Configuración de la conexión a PostgreSQL (Supabase / Render)
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+});
+
+// Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Conexión a la Base de Datos SQLite
-const db = new sqlite3.Database('./database.db', (err) => {
-    if (err) console.error("Error al conectar BD:", err.message);
-    else console.log("Base de datos SQLite conectada correctamente.");
+// Inicializar la tabla en PostgreSQL si no existe
+const initDb = async () => {
+  try {
+    const createTableQuery = `
+      CREATE TABLE IF NOT EXISTS ordenes (
+        id SERIAL PRIMARY KEY,
+        numero_orden VARCHAR(100),
+        cliente VARCHAR(250),
+        pieza VARCHAR(250),
+        cantidad INT,
+        estatus VARCHAR(50) DEFAULT 'Pendiente',
+        fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    await pool.query(createTableQuery);
+    console.log('Tabla ordenes verificada/creada correctamente en PostgreSQL.');
+  } catch (err) {
+    console.error('Error al inicializar la base de datos:', err);
+  }
+};
+
+initDb();
+
+// Rutas API
+app.get('/api/ordenes', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM ordenes ORDER BY id DESC');
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Crear tabla completa con todas las columnas
-db.run(`CREATE TABLE IF NOT EXISTS items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    proyecto_numero TEXT,
-    id_item TEXT,
-    nombre_pieza TEXT,
-    material TEXT,
-    cantidad INTEGER,
-    pedido_mat_check INTEGER DEFAULT 0,
-    fecha_pedido_mat TEXT,
-    llegada_mat_check INTEGER DEFAULT 0,
-    fecha_llegada_mat TEXT,
-    tipo_fabricacion TEXT DEFAULT 'INTERNA',
-    proveedor_fab TEXT,
-    envio_fab_check INTEGER DEFAULT 0,
-    fecha_envio_fab TEXT,
-    fin_fab_check INTEGER DEFAULT 0,
-    fecha_fin_fab TEXT,
-    tipo_tratamiento TEXT,
-    proveedor_tratamiento TEXT,
-    envio_trat_check INTEGER DEFAULT 0,
-    fecha_envio_trat TEXT,
-    retorno_trat_check INTEGER DEFAULT 0,
-    fecha_retorno_trat TEXT,
-    finalizado_check INTEGER DEFAULT 0,
-    fecha_finalizado TEXT
-)`);
-
-// 1. Obtener todos los ítems
-app.get('/api/items', (req, res) => {
-    db.all("SELECT * FROM items ORDER BY id DESC", [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(rows);
-    });
+app.post('/api/ordenes', async (req, res) => {
+  const { numero_orden, cliente, pieza, cantidad, estatus } = req.body;
+  try {
+    const insertQuery = `
+      INSERT INTO ordenes (numero_orden, cliente, pieza, cantidad, estatus)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *;
+    `;
+    const values = [numero_orden, cliente, pieza, cantidad, estatus || 'Pendiente'];
+    const { rows } = await pool.query(insertQuery, values);
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// 2. Agregar ítem manual
-app.post('/api/items/manual', (req, res) => {
-    const { proyecto_numero, id_item, nombre_pieza, material, cantidad } = req.body;
-    const sql = `INSERT INTO items (proyecto_numero, id_item, nombre_pieza, material, cantidad) VALUES (?, ?, ?, ?, ?)`;
-    db.run(sql, [proyecto_numero, id_item, nombre_pieza, material, cantidad || 1], function(err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ id: this.lastID });
-    });
+app.put('/api/ordenes/:id', async (req, res) => {
+  const { id } = req.params;
+  const { numero_orden, cliente, pieza, cantidad, estatus } = req.body;
+  try {
+    const updateQuery = `
+      UPDATE ordenes
+      SET numero_orden = $1, cliente = $2, pieza = $3, cantidad = $4, estatus = $5
+      WHERE id = $6
+      RETURNING *;
+    `;
+    const values = [numero_orden, cliente, pieza, cantidad, estatus, id];
+    const { rows } = await pool.query(updateQuery, values);
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// 3. Actualizar etapas / campos
-app.put('/api/items/:id/etapa', (req, res) => {
-    const { id } = req.params;
-    const { campo, valor } = req.body;
-
-    const camposPermitidos = [
-        'proyecto_numero', 'pedido_mat_check', 'llegada_mat_check', 'tipo_fabricacion', 'proveedor_fab', 
-        'envio_fab_check', 'fin_fab_check', 'tipo_tratamiento', 'proveedor_tratamiento', 
-        'envio_trat_check', 'retorno_trat_check', 'finalizado_check',
-        'nombre_pieza', 'material', 'cantidad'
-    ];
-
-    if (!camposPermitidos.includes(campo)) {
-        return res.status(400).json({ error: "Campo no permitido" });
-    }
-
-    const hoy = new Date().toISOString().split('T')[0];
-    let sql = `UPDATE items SET ${campo} = ? WHERE id = ?`;
-    let params = [valor, id];
-
-    if (campo.endsWith('_check') && valor == 1) {
-        const campoFecha = 'fecha_' + campo.replace('_check', '');
-        sql = `UPDATE items SET ${campo} = ?, ${campoFecha} = ? WHERE id = ?`;
-        params = [valor, hoy, id];
-    }
-
-    db.run(sql, params, function(err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ updated: this.changes });
-    });
-});
-
-// 4. Eliminar pieza por DELETE (Método Estándar)
-app.delete('/api/items/:id', (req, res) => {
-    const { id } = req.params;
-    db.run("DELETE FROM items WHERE id = ?", [id], function(err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ message: "Eliminado con éxito", deletedID: id });
-    });
-});
-
-// 5. Eliminar pieza por GET (Método de Respaldo Anti-Fallos)
-app.get('/api/items/eliminar/:id', (req, res) => {
-    const { id } = req.params;
-    db.run("DELETE FROM items WHERE id = ?", [id], function(err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ message: "Eliminado con éxito", deletedID: id });
-    });
+app.delete('/api/ordenes/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM ordenes WHERE id = $1', [id]);
+    res.json({ message: 'Orden eliminada correctamente' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.listen(PORT, () => {
-    console.log(`Servidor activo en http://localhost:${PORT}`);
+  console.log(`Servidor escuchando en el puerto ${PORT}`);
 });
