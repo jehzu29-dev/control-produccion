@@ -14,7 +14,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Inicialización de PostgreSQL
+// Inicializar PostgreSQL
 const initDb = async () => {
   try {
     await pool.query(`
@@ -24,7 +24,7 @@ const initDb = async () => {
         fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    console.log('Tabla "items" sincronizada en PostgreSQL.');
+    console.log('Tabla "items" lista en PostgreSQL.');
   } catch (err) {
     console.error('Error al inicializar la base de datos:', err);
   }
@@ -32,19 +32,49 @@ const initDb = async () => {
 
 initDb();
 
-const formatItemResponse = (row) => {
-  if (!row) return null;
-  const datos = row.datos || {};
-  return {
-    ...datos,
-    id: row.id,
-    _id: row.id
-  };
+// Función que normaliza casillas y campos para que el JS del navegador los reconozca al 100%
+const normalizeData = (data, id) => {
+  if (!data || typeof data !== 'object') data = {};
+  
+  const clean = { ...data };
+  
+  // Asegurar IDs en ambos formatos
+  clean.id = parseInt(id);
+  clean._id = String(id);
+  clean.id_item = clean.id_item || clean.codigo || clean.pieza || '';
+
+  // Convertir valores booleanos a compatibilidad doble (boolean/number)
+  const boolKeys = [
+    'se_pidio', 'sePidio', 
+    'llego', 
+    'paso_fab', 'pasoFab', 
+    'termino_fab', 'terminoFab', 
+    'mando_trat', 'mandoTrat', 
+    'regreso_trat', 'regresoTrat', 
+    'finalizacion', 'finalizado'
+  ];
+
+  boolKeys.forEach(key => {
+    if (key in clean) {
+      const val = clean[key];
+      if (val === true || val === 'true' || val === 1 || val === '1') {
+        clean[key] = true;
+      } else if (val === false || val === 'false' || val === 0 || val === '0') {
+        clean[key] = false;
+      }
+    }
+  });
+
+  return clean;
 };
 
-// --- RUTAS DE API ---
+const formatItemResponse = (row) => {
+  if (!row) return null;
+  return normalizeData(row.datos, row.id);
+};
 
-// 1. Obtener todos los items
+// --- RUTAS API ---
+
 app.get('/api/items', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM items ORDER BY id ASC');
@@ -55,7 +85,6 @@ app.get('/api/items', async (req, res) => {
   }
 });
 
-// Guardado de nuevos items
 const guardarNuevoItem = async (body) => {
   const insertQuery = `
     INSERT INTO items (datos)
@@ -63,13 +92,12 @@ const guardarNuevoItem = async (body) => {
     RETURNING *;
   `;
   const { rows } = await pool.query(insertQuery, [JSON.stringify(body)]);
-  
-  // Asignar el ID autogenerado dentro del propio objeto JSON de datos
   const nuevoId = rows[0].id;
-  const datosConId = { ...body, id: nuevoId, _id: nuevoId };
   
-  await pool.query('UPDATE items SET datos = $1 WHERE id = $2', [JSON.stringify(datosConId), nuevoId]);
-  return datosConId;
+  const datosNormalizados = normalizeData(body, nuevoId);
+  await pool.query('UPDATE items SET datos = $1 WHERE id = $2', [JSON.stringify(datosNormalizados), nuevoId]);
+  
+  return datosNormalizados;
 };
 
 app.post('/api/items', async (req, res) => {
@@ -90,23 +118,15 @@ app.post('/api/items/manual', async (req, res) => {
   }
 });
 
-// 2. Actualización de Casillas / Fechas / Porcentajes (PUT & PATCH)
 const actualizarItem = async (id, camposNuevos) => {
-  // Obtener item actual de la base de datos para no sobrescribir o perder datos existentes
   const { rows } = await pool.query('SELECT * FROM items WHERE id = $1', [id]);
   if (rows.length === 0) {
     throw new Error('Item no encontrado');
   }
 
   const datosExistentes = rows[0].datos || {};
-  
-  // Fusionar los datos previos con los nuevos cambios recibidos de los checkboxes
-  const datosActualizados = {
-    ...datosExistentes,
-    ...camposNuevos,
-    id: parseInt(id),
-    _id: parseInt(id)
-  };
+  const datosFusionados = { ...datosExistentes, ...camposNuevos };
+  const datosNormalizados = normalizeData(datosFusionados, id);
 
   const updateQuery = `
     UPDATE items
@@ -114,7 +134,7 @@ const actualizarItem = async (id, camposNuevos) => {
     WHERE id = $2
     RETURNING *;
   `;
-  const result = await pool.query(updateQuery, [JSON.stringify(datosActualizados), id]);
+  const result = await pool.query(updateQuery, [JSON.stringify(datosNormalizados), id]);
   return formatItemResponse(result.rows[0]);
 };
 
@@ -136,7 +156,6 @@ app.patch('/api/items/:id', async (req, res) => {
   }
 });
 
-// 3. Eliminar item
 app.delete('/api/items/:id', async (req, res) => {
   try {
     await pool.query('DELETE FROM items WHERE id = $1', [req.params.id]);
