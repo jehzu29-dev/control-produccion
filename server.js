@@ -5,21 +5,19 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configuración de la conexión a PostgreSQL (Supabase / Render)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
-// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Crear tabla flexible en PostgreSQL
+// Inicializador de base de datos que asegura todas las columnas posibles
 const initDb = async () => {
   try {
-    const createTableQuery = `
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS items (
         id SERIAL PRIMARY KEY,
         numero_orden TEXT,
@@ -31,9 +29,24 @@ const initDb = async () => {
         datos JSONB DEFAULT '{}'::jsonb,
         fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
-    `;
-    await pool.query(createTableQuery);
-    console.log('Tabla "items" inicializada correctamente en PostgreSQL.');
+    `);
+    
+    // Agregar columnas por si la tabla ya existía con una estructura vieja
+    const alterQueries = [
+      'ALTER TABLE items ADD COLUMN IF NOT EXISTS numero_orden TEXT;',
+      'ALTER TABLE items ADD COLUMN IF NOT EXISTS cliente TEXT;',
+      'ALTER TABLE items ADD COLUMN IF NOT EXISTS pieza TEXT;',
+      'ALTER TABLE items ADD COLUMN IF NOT EXISTS descripcion TEXT;',
+      'ALTER TABLE items ADD COLUMN IF NOT EXISTS cantidad INT;',
+      'ALTER TABLE items ADD COLUMN IF NOT EXISTS estatus TEXT DEFAULT \'Pendiente\';',
+      'ALTER TABLE items ADD COLUMN IF NOT EXISTS datos JSONB DEFAULT \'{}\'::jsonb;'
+    ];
+
+    for (let q of alterQueries) {
+      await pool.query(q).catch(() => {});
+    }
+
+    console.log('Tabla "items" sincronizada y lista en PostgreSQL.');
   } catch (err) {
     console.error('Error al inicializar la base de datos:', err);
   }
@@ -41,14 +54,14 @@ const initDb = async () => {
 
 initDb();
 
-// Función auxiliar para insertar items recibiendo cualquier campo
+// Guardado ultra-seguro
 const guardarItem = async (body) => {
-  const numero_orden = body.numero_orden || body.orden || body.no_orden || body.numero || '';
-  const cliente = body.cliente || '';
-  const pieza = body.pieza || body.descripcion || body.item || '';
-  const descripcion = body.descripcion || body.pieza || '';
+  const numero_orden = String(body.numero_orden || body.orden || body.no_orden || body.numero || '');
+  const cliente = String(body.cliente || '');
+  const pieza = String(body.pieza || body.descripcion || body.item || '');
+  const descripcion = String(body.descripcion || body.pieza || '');
   const cantidad = parseInt(body.cantidad) || 1;
-  const estatus = body.estatus || 'Pendiente';
+  const estatus = String(body.estatus || 'Pendiente');
 
   const insertQuery = `
     INSERT INTO items (numero_orden, cliente, pieza, descripcion, cantidad, estatus, datos)
@@ -62,46 +75,45 @@ const guardarItem = async (body) => {
 
 // --- RUTAS API ---
 
-// 1. Obtener todos los items
 app.get('/api/items', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM items ORDER BY id DESC');
     res.json(rows);
   } catch (err) {
+    console.error('Error en GET /api/items:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// 2. Ruta estándar de guardado
 app.post('/api/items', async (req, res) => {
   try {
     const nuevoItem = await guardarItem(req.body);
     res.status(201).json(nuevoItem);
   } catch (err) {
+    console.error('Error en POST /api/items:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// 3. Ruta específica /api/items/manual (detectada en la consola)
 app.post('/api/items/manual', async (req, res) => {
   try {
     const nuevoItem = await guardarItem(req.body);
     res.status(201).json(nuevoItem);
   } catch (err) {
+    console.error('Error en POST /api/items/manual:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// 4. Actualizar item
 app.put('/api/items/:id', async (req, res) => {
   const { id } = req.params;
   const body = req.body;
-  const numero_orden = body.numero_orden || body.orden || body.no_orden || '';
-  const cliente = body.cliente || '';
-  const pieza = body.pieza || body.descripcion || body.item || '';
-  const descripcion = body.descripcion || body.pieza || '';
+  const numero_orden = String(body.numero_orden || body.orden || body.no_orden || '');
+  const cliente = String(body.cliente || '');
+  const pieza = String(body.pieza || body.descripcion || body.item || '');
+  const descripcion = String(body.descripcion || body.pieza || '');
   const cantidad = parseInt(body.cantidad) || 1;
-  const estatus = body.estatus || 'Pendiente';
+  const estatus = String(body.estatus || 'Pendiente');
 
   try {
     const updateQuery = `
@@ -114,17 +126,18 @@ app.put('/api/items/:id', async (req, res) => {
     const { rows } = await pool.query(updateQuery, values);
     res.json(rows[0]);
   } catch (err) {
+    console.error('Error en PUT /api/items:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// 5. Eliminar item
 app.delete('/api/items/:id', async (req, res) => {
   const { id } = req.params;
   try {
     await pool.query('DELETE FROM items WHERE id = $1', [id]);
     res.json({ message: 'Item eliminado' });
   } catch (err) {
+    console.error('Error en DELETE /api/items:', err);
     res.status(500).json({ error: err.message });
   }
 });
