@@ -14,7 +14,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Inicializar tabla con soporte para guardar el objeto completo en JSON
+// Inicialización de PostgreSQL
 const initDb = async () => {
   try {
     await pool.query(`
@@ -24,8 +24,7 @@ const initDb = async () => {
         fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    await pool.query('ALTER TABLE items ADD COLUMN IF NOT EXISTS datos JSONB DEFAULT \'{}\'::jsonb;').catch(() => {});
-    console.log('Tabla "items" lista en PostgreSQL.');
+    console.log('Tabla "items" sincronizada en PostgreSQL.');
   } catch (err) {
     console.error('Error al inicializar la base de datos:', err);
   }
@@ -33,7 +32,6 @@ const initDb = async () => {
 
 initDb();
 
-// Función para formatear las respuestas unificando el ID y los datos
 const formatItemResponse = (row) => {
   if (!row) return null;
   const datos = row.datos || {};
@@ -44,11 +42,12 @@ const formatItemResponse = (row) => {
   };
 };
 
-// --- RUTAS API ---
+// --- RUTAS DE API ---
 
+// 1. Obtener todos los items
 app.get('/api/items', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM items ORDER BY id DESC');
+    const { rows } = await pool.query('SELECT * FROM items ORDER BY id ASC');
     const items = rows.map(formatItemResponse);
     res.json(items);
   } catch (err) {
@@ -56,20 +55,27 @@ app.get('/api/items', async (req, res) => {
   }
 });
 
-const guardarItem = async (body) => {
+// Guardado de nuevos items
+const guardarNuevoItem = async (body) => {
   const insertQuery = `
     INSERT INTO items (datos)
     VALUES ($1)
     RETURNING *;
   `;
   const { rows } = await pool.query(insertQuery, [JSON.stringify(body)]);
-  return formatItemResponse(rows[0]);
+  
+  // Asignar el ID autogenerado dentro del propio objeto JSON de datos
+  const nuevoId = rows[0].id;
+  const datosConId = { ...body, id: nuevoId, _id: nuevoId };
+  
+  await pool.query('UPDATE items SET datos = $1 WHERE id = $2', [JSON.stringify(datosConId), nuevoId]);
+  return datosConId;
 };
 
 app.post('/api/items', async (req, res) => {
   try {
-    const nuevoItem = await guardarItem(req.body);
-    res.status(201).json(nuevoItem);
+    const item = await guardarNuevoItem(req.body);
+    res.status(201).json(item);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -77,34 +83,64 @@ app.post('/api/items', async (req, res) => {
 
 app.post('/api/items/manual', async (req, res) => {
   try {
-    const nuevoItem = await guardarItem(req.body);
-    res.status(201).json(nuevoItem);
+    const item = await guardarNuevoItem(req.body);
+    res.status(201).json(item);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
+// 2. Actualización de Casillas / Fechas / Porcentajes (PUT & PATCH)
+const actualizarItem = async (id, camposNuevos) => {
+  // Obtener item actual de la base de datos para no sobrescribir o perder datos existentes
+  const { rows } = await pool.query('SELECT * FROM items WHERE id = $1', [id]);
+  if (rows.length === 0) {
+    throw new Error('Item no encontrado');
+  }
+
+  const datosExistentes = rows[0].datos || {};
+  
+  // Fusionar los datos previos con los nuevos cambios recibidos de los checkboxes
+  const datosActualizados = {
+    ...datosExistentes,
+    ...camposNuevos,
+    id: parseInt(id),
+    _id: parseInt(id)
+  };
+
+  const updateQuery = `
+    UPDATE items
+    SET datos = $1
+    WHERE id = $2
+    RETURNING *;
+  `;
+  const result = await pool.query(updateQuery, [JSON.stringify(datosActualizados), id]);
+  return formatItemResponse(result.rows[0]);
+};
 
 app.put('/api/items/:id', async (req, res) => {
-  const { id } = req.params;
   try {
-    const updateQuery = `
-      UPDATE items
-      SET datos = $1
-      WHERE id = $2
-      RETURNING *;
-    `;
-    const { rows } = await pool.query(updateQuery, [JSON.stringify(req.body), id]);
-    res.json(formatItemResponse(rows[0]));
+    const itemActualizado = await actualizarItem(req.params.id, req.body);
+    res.json(itemActualizado);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.delete('/api/items/:id', async (req, res) => {
-  const { id } = req.params;
+app.patch('/api/items/:id', async (req, res) => {
   try {
-    await pool.query('DELETE FROM items WHERE id = $1', [id]);
-    res.json({ message: 'Item eliminado correctamente' });
+    const itemActualizado = await actualizarItem(req.params.id, req.body);
+    res.json(itemActualizado);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 3. Eliminar item
+app.delete('/api/items/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM items WHERE id = $1', [req.params.id]);
+    res.json({ message: 'Registro eliminado correctamente' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
