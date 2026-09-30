@@ -16,11 +16,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Inicializar la tabla en PostgreSQL si no existe
+// Inicializar la tabla "items" en PostgreSQL si no existe
 const initDb = async () => {
   try {
     const createTableQuery = `
-      CREATE TABLE IF NOT EXISTS ordenes (
+      CREATE TABLE IF NOT EXISTS items (
         id SERIAL PRIMARY KEY,
         numero_orden VARCHAR(100),
         cliente VARCHAR(250),
@@ -31,7 +31,7 @@ const initDb = async () => {
       );
     `;
     await pool.query(createTableQuery);
-    console.log('Tabla ordenes verificada/creada correctamente en PostgreSQL.');
+    console.log('Tabla "items" verificada/creada correctamente en PostgreSQL.');
   } catch (err) {
     console.error('Error al inicializar la base de datos:', err);
   }
@@ -39,21 +39,21 @@ const initDb = async () => {
 
 initDb();
 
-// Rutas API
-app.get('/api/ordenes', async (req, res) => {
+// Rutas API ajustadas a /api/items
+app.get('/api/items', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM ordenes ORDER BY id DESC');
+    const { rows } = await pool.query('SELECT * FROM items ORDER BY id DESC');
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/ordenes', async (req, res) => {
+app.post('/api/items', async (req, res) => {
   const { numero_orden, cliente, pieza, cantidad, estatus } = req.body;
   try {
     const insertQuery = `
-      INSERT INTO ordenes (numero_orden, cliente, pieza, cantidad, estatus)
+      INSERT INTO items (numero_orden, cliente, pieza, cantidad, estatus)
       VALUES ($1, $2, $3, $4, $5)
       RETURNING *;
     `;
@@ -65,12 +65,12 @@ app.post('/api/ordenes', async (req, res) => {
   }
 });
 
-app.put('/api/ordenes/:id', async (req, res) => {
+app.put('/api/items/:id', async (req, res) => {
   const { id } = req.params;
   const { numero_orden, cliente, pieza, cantidad, estatus } = req.body;
   try {
     const updateQuery = `
-      UPDATE ordenes
+      UPDATE items
       SET numero_orden = $1, cliente = $2, pieza = $3, cantidad = $4, estatus = $5
       WHERE id = $6
       RETURNING *;
@@ -83,11 +83,11 @@ app.put('/api/ordenes/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/ordenes/:id', async (req, res) => {
+app.delete('/api/items/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    await pool.query('DELETE FROM ordenes WHERE id = $1', [id]);
-    res.json({ message: 'Orden eliminada correctamente' });
+    await pool.query('DELETE FROM items WHERE id = $1', [id]);
+    res.json({ message: 'Item eliminado correctamente' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
