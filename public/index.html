@@ -3,439 +3,525 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Ejecutivo - Control de Producción</title>
+    <title>Control de Producción - Taller</title>
     <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
-        body { background-color: #f1f5f9; color: #0f172a; padding: 20px; }
-        
-        header { background: linear-gradient(135deg, #0f172a, #1e293b); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h1 { font-size: 1.4rem; font-weight: 700; }
-        
-        .selector-proyecto { display: flex; align-items: center; gap: 10px; background: #2563eb; padding: 10px 16px; border-radius: 8px; border: 2px solid #60a5fa; }
-        .selector-proyecto label { color: white; font-size: 0.9rem; font-weight: 700; margin: 0; }
-        .selector-proyecto select { background: white; border: none; font-weight: bold; color: #0f172a; padding: 6px 12px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-        .kpi-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .kpi-card { background: white; padding: 18px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 5px solid #2563eb; }
-        .kpi-card h3 { font-size: 0.8rem; text-transform: uppercase; color: #64748b; margin-bottom: 5px; }
-        .kpi-card .number { font-size: 1.8rem; font-weight: 800; color: #0f172a; }
-        .kpi-card.green { border-left-color: #16a34a; }
-        .kpi-card.amber { border-left-color: #d97706; }
-        .kpi-card.purple { border-left-color: #9333ea; }
-        
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        h2 { font-size: 1.1rem; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
-        
-        .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; align-items: end; }
-        label { font-weight: 600; font-size: 0.8rem; color: #475569; display: block; margin-bottom: 4px; }
-        input, select, button { padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.8rem; width: 100%; }
-        button { background-color: #2563eb; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        button:hover { background-color: #1d4ed8; }
-        
-        .gantt-wrapper { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
-        .gantt-row { display: grid; grid-template-columns: 140px 1fr 60px; align-items: center; gap: 10px; font-size: 0.85rem; font-weight: 600; }
-        .gantt-track { background: #e2e8f0; height: 22px; border-radius: 6px; overflow: hidden; position: relative; }
-        .gantt-fill { height: 100%; border-radius: 6px; transition: width 0.4s ease; }
-        
-        .table-container { overflow-x: auto; max-height: 60vh; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.78rem; text-align: center; }
-        th, td { border: 1px solid #cbd5e1; padding: 6px; white-space: nowrap; }
-        th { background-color: #f1f5f9; color: #1e293b; position: sticky; top: 0; z-index: 10; font-size: 0.75rem; }
-        th.group-header { text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px; }
-        
-        .fecha-tag { display: block; font-size: 0.65rem; color: #1d4ed8; font-weight: 700; margin-top: 2px; }
-        .progress-bar { background-color: #e2e8f0; border-radius: 8px; overflow: hidden; height: 16px; width: 80px; display: inline-block; }
-        .progress-fill { background-color: #16a34a; height: 100%; text-align: center; color: white; font-size: 0.68rem; font-weight: bold; line-height: 16px; }
-        
-        .btn-accion { padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; margin: 0 2px; width: auto; }
-        .btn-edit { background: #d97706; color: white; }
-        .btn-del { background: #dc2626; color: white; }
+        body {
+            background-color: #f8fafc;
+            color: #1e293b;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: #0f172a;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-left: 4px solid #3b82f6;
+        }
+
+        .stat-card h3 {
+            font-size: 0.85rem;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+
+        .stat-card p {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1e293b;
+            margin-top: 5px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        input[type="text"], select {
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .btn:hover {
+            background-color: #1d4ed8;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        th, td {
+            padding: 10px 8px;
+            border: 1px solid #e2e8f0;
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: #f1f5f9;
+            color: #475569;
+            font-weight: 600;
+        }
+
+        .group-header {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .fecha-tag {
+            display: block;
+            font-size: 0.65rem;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        .progress-bar {
+            background-color: #e2e8f0;
+            border-radius: 10px;
+            height: 15px;
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            background-color: #22c55e;
+            height: 100%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.65rem;
+            font-weight: bold;
+        }
+
+        .btn-accion {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 2px;
+        }
+
+        .btn-edit { background: #eab308; color: white; }
+        .btn-del { background: #ef4444; color: white; }
+
+        .img-cell {
+            width: 50px;
+            height: 50px;
+            border: 2px dashed #cbd5e1;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            cursor: pointer;
+            background: #f8fafc;
+            overflow: hidden;
+        }
+
+        .img-cell img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .img-cell:hover {
+            border-color: #2563eb;
+            background: #eff6ff;
+        }
     </style>
 </head>
 <body>
 
+<div class="container">
     <header>
-        <div>
-            <h1>AYM Automatizacion y maquinados Leal</h1>
-            <small style="color: #cbd5e1;">Control de Fechas de Material, Fabricación Interna/Externa, Tratamientos y Cierre</small>
-        </div>
-
-        <div class="selector-proyecto">
-            <label for="filtroProyecto">📁 SELECCIONAR PROYECTO:</label>
-            <select id="filtroProyecto" onchange="filtrarPorProyecto()">
-                <option value="TODOS">-- Ver Todos los Proyectos --</option>
-            </select>
-        </div>
-
-        <span>Estado: <strong style="color: #4ade80;">● En Línea</strong></span>
+        <h1>📋 Control de Producción y Fabricación</h1>
+        <button class="btn" onclick="abrirModalNuevo()">+ Nueva Pieza / Proyecto</button>
     </header>
 
-    <div class="kpi-container">
-        <div class="kpi-card green">
-            <h3>Avance Global Proyecto</h3>
-            <div class="number" id="kpiAvance">0%</div>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Total Piezas</h3>
+            <p id="statTotal">0</p>
         </div>
-        <div class="kpi-card">
-            <h3>Total de Piezas</h3>
-            <div class="number" id="kpiTotal">0</div>
-        </div>
-        <div class="kpi-card amber">
+        <div class="stat-card" style="border-left-color: #eab308;">
             <h3>En Proceso</h3>
-            <div class="number" id="kpiProceso">0</div>
+            <p id="statProceso">0</p>
         </div>
-        <div class="kpi-card purple">
-            <h3>Fecha Estimada Término</h3>
-            <div class="number" style="font-size: 1.2rem; margin-top: 6px;" id="kpiEta">Calculando...</div>
+        <div class="stat-card" style="border-left-color: #22c55e;">
+            <h3>Terminados</h3>
+            <p id="statTerminados">0</p>
         </div>
-    </div>
-
-    <div class="card">
-        <h2>📊 Avance por Etapas del Proyecto (Vista Macro)</h2>
-        <div class="gantt-wrapper">
-            <div class="gantt-row">
-                <span>1. Abastecimiento</span>
-                <div class="gantt-track"><div class="gantt-fill" id="ganttAbast" style="width: 0%; background: #f59e0b;"></div></div>
-                <span id="txtAbast">0%</span>
-            </div>
-            <div class="gantt-row">
-                <span>2. Fabricación</span>
-                <div class="gantt-track"><div class="gantt-fill" id="ganttFab" style="width: 0%; background: #0284c7;"></div></div>
-                <span id="txtFab">0%</span>
-            </div>
-            <div class="gantt-row">
-                <span>3. Tratamiento</span>
-                <div class="gantt-track"><div class="gantt-fill" id="ganttTrat" style="width: 0%; background: #9333ea;"></div></div>
-                <span id="txtTrat">0%</span>
-            </div>
-            <div class="gantt-row">
-                <span>4. Finalización</span>
-                <div class="gantt-track"><div class="gantt-fill" id="ganttCal" style="width: 0%; background: #16a34a;"></div></div>
-                <span id="txtCal">0%</span>
-            </div>
+        <div class="stat-card" style="border-left-color: #a855f7;">
+            <h3>Avance Global</h3>
+            <p id="statAvance">0%</p>
         </div>
     </div>
 
-    <div class="card">
-        <h2>➕ Agregar Pieza Manualmente</h2>
-        <form id="formManual" onsubmit="agregarItemManual(event)" class="grid-form">
-            <div>
-                <label>N° Proyecto *</label>
-                <input type="text" id="numProyecto" placeholder="Ej: PRJ-101" required>
-            </div>
-            <div>
-                <label>ID Item / Código *</label>
-                <input type="text" id="idItem" placeholder="Ej: PIEZA-02" required>
-            </div>
-            <div>
-                <label>Descripción / Nombre</label>
-                <input type="text" id="nombrePieza" placeholder="Ej: Base Secundaria">
-            </div>
-            <div>
-                <label>Material</label>
-                <input type="text" id="material" placeholder="Ej: ALUMINIO">
-            </div>
-            <div>
-                <label>Cantidad</label>
-                <input type="number" id="cantidad" value="1" min="1">
-            </div>
-            <div>
-                <button type="submit" style="background:#16a34a;">➕ Guardar Pieza</button>
-            </div>
-        </form>
+    <div class="controls">
+        <input type="text" id="filtroProyecto" placeholder="Filtrar por Proyecto..." onkeyup="filtrarTabla()">
+        <input type="text" id="filtroItem" placeholder="Filtrar por ID Item / Pieza..." onkeyup="filtrarTabla()">
+        <select id="filtroEstatus" onchange="filtrarTabla()">
+            <option value="TODOS">Todos los estatus</option>
+            <option value="PENDIENTE">PENDIENTE</option>
+            <option value="EN PROCESO">EN PROCESO</option>
+            <option value="TERMINADO">TERMINADO</option>
+        </select>
     </div>
 
-    <div class="card">
-        <h2>🔍 Matriz de Trazabilidad Completa de Piezas</h2>
-
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th colspan="3" class="group-header" style="background: #e2e8f0;">Datos Generales</th>
-                        <th colspan="2" class="group-header" style="background: #fef3c7;">1. Material</th>
-                        <th colspan="4" class="group-header" style="background: #e0f2fe;">2. Fabricación (Interna / Externa)</th>
-                        <th colspan="4" class="group-header" style="background: #f3e8ff;">3. Tratamiento Térmico / Acabado</th>
-                        <th colspan="3" class="group-header" style="background: #dcfce7;">4. Cierre & Acciones</th>
-                    </tr>
-                    <tr>
-                        <th>ID Item / Proyecto</th>
-                        <th>Material</th>
-                        <th>Cant.</th>
-                        
-                        <th>Se Pidió</th>
-                        <th>Llegó</th>
-                        
-                        <th>Tipo / Prov</th>
-                        <th>Pasó a Fab.</th>
-                        <th>Terminó Fab.</th>
-                        <th>Estatus Fab</th>
-                        
-                        <th>Tratamiento</th>
-                        <th>Proveedor</th>
-                        <th>Mando Trat.</th>
-                        <th>Regresó Trat.</th>
-
-                        <th>Finalización</th>
-                        <th>% Total</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="tablaItems">
-                    <tr><td colspan="16">Cargando datos...</td></tr>
-                </tbody>
-            </table>
-        </div>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th colspan="4" class="group-header" style="background: #e2e8f0;">Datos Generales</th>
+                    <th colspan="2" class="group-header" style="background: #dbeafe;">1. Material</th>
+                    <th colspan="4" class="group-header" style="background: #fef3c7;">2. Fabricación</th>
+                    <th colspan="4" class="group-header" style="background: #f3e8ff;">3. Tratamiento Térmico</th>
+                    <th colspan="2" class="group-header" style="background: #dcfce7;">Estatus Final</th>
+                    <th rowspan="2">Acciones</th>
+                </tr>
+                <tr>
+                    <th>Imagen</th>
+                    <th>ID Item / Proyecto</th>
+                    <th>Material</th>
+                    <th>Cant.</th>
+                    <th>Se Pidió</th>
+                    <th>Llegó</th>
+                    <th>Tipo</th>
+                    <th>Envío</th>
+                    <th>Fin Fab</th>
+                    <th>Estatus Fab</th>
+                    <th>Tipo Trat.</th>
+                    <th>Proveedor</th>
+                    <th>Envío</th>
+                    <th>Retorno</th>
+                    <th>Finalizado</th>
+                    <th>% Total</th>
+                </tr>
+            </thead>
+            <tbody id="tablaItems">
+                <!-- Se llena dinámicamente -->
+            </tbody>
+        </table>
     </div>
+</div>
 
-    <script>
-        let itemsGlobales = [];
-        let itemsFiltrados = [];
+<script>
+let itemsGlobales = [];
+let itemsFiltrados = [];
 
-        function cargarItems() {
-            fetch('/api/items')
-                .then(res => res.json())
-                .then(data => {
-                    itemsGlobales = data;
-                    poblarSelectorProyectos();
-                    filtrarPorProyecto();
-                })
-                .catch(err => console.error("Error al cargar ítems:", err));
+async function cargarItems() {
+    try {
+        const res = await fetch('/api/items');
+        itemsGlobales = await res.json();
+        filtrarTabla();
+    } catch (err) {
+        console.error('Error al cargar datos:', err);
+    }
+}
+
+function filtrarTabla() {
+    const proyecto = document.getElementById('filtroProyecto').value.toLowerCase();
+    const itemQuery = document.getElementById('filtroItem').value.toLowerCase();
+    const estatus = document.getElementById('filtroEstatus').value;
+
+    itemsFiltrados = itemsGlobales.filter(item => {
+        const matchProyecto = (item.proyecto_numero || '').toLowerCase().includes(proyecto);
+        const matchItem = (item.id_item || '').toLowerCase().includes(itemQuery) || (item.nombre_pieza || '').toLowerCase().includes(itemQuery);
+        
+        let matchEstatus = true;
+        const estatusFab = (item.fin_fab_check == 1) ? 'TERMINADO' : ((item.envio_fab_check == 1) ? 'EN PROCESO' : 'PENDIENTE');
+        if (estatus !== 'TODOS') matchEstatus = (estatusFab === estatus);
+
+        return matchProyecto && matchItem && matchEstatus;
+    });
+
+    renderizarTabla();
+    actualizarEstadisticas();
+}
+
+function calcularPorcentaje(item) {
+    let puntos = 0;
+    if (item.pedido_mat_check == 1) puntos += 10;
+    if (item.llegada_mat_check == 1) puntos += 15;
+    if (item.envio_fab_check == 1) puntos += 15;
+    if (item.fin_fab_check == 1) puntos += 30;
+    if (item.retorno_trat_check == 1 || item.envio_trat_check == 1) puntos += 15;
+    if (item.finalizado_check == 1) puntos += 15;
+    return Math.min(puntos, 100);
+}
+
+function renderizarTabla() {
+    const tbody = document.getElementById('tablaItems');
+    tbody.innerHTML = '';
+
+    if (itemsFiltrados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="17" style="padding:20px; color:#64748b;">No hay piezas registradas.</td></tr>';
+        return;
+    }
+
+    itemsFiltrados.forEach(item => {
+        const porcentaje = calcularPorcentaje(item);
+
+        const fechaPed = (item.pedido_mat_check == 1 && item.fecha_pedido_mat) ? `<span class="fecha-tag">📅 ${item.fecha_pedido_mat}</span>` : '';
+        const fechaLleg = (item.llegada_mat_check == 1 && item.fecha_llegada_mat) ? `<span class="fecha-tag">📅 ${item.fecha_llegada_mat}</span>` : '';
+        const fechaEnvFab = (item.envio_fab_check == 1 && item.fecha_envio_fab) ? `<span class="fecha-tag">📅 ${item.fecha_envio_fab}</span>` : '';
+        const fechaFinFab = (item.fin_fab_check == 1 && item.fecha_fin_fab) ? `<span class="fecha-tag">📅 ${item.fecha_fin_fab}</span>` : '';
+        const fechaEnvTrat = (item.envio_trat_check == 1 && item.fecha_envio_trat) ? `<span class="fecha-tag">📅 ${item.fecha_envio_trat}</span>` : '';
+        const fechaRetTrat = (item.retorno_trat_check == 1 && item.fecha_retorno_trat) ? `<span class="fecha-tag">📅 ${item.fecha_retorno_trat}</span>` : '';
+        const fechaFin = (item.finalizado_check == 1 && item.fecha_finalizado) ? `<span class="fecha-tag">📅 ${item.fecha_finalizado}</span>` : '';
+
+        const estatusFab = (item.fin_fab_check == 1) ? 'TERMINADO' : ((item.envio_fab_check == 1) ? 'EN PROCESO' : 'PENDIENTE');
+        const colorFab = (item.fin_fab_check == 1) ? '#16a34a' : '#d97706';
+
+        const inputProveedorFab = (item.tipo_fabricacion === 'EXTERNA') 
+            ? `<input type="text" style="width:90px; margin-top:3px;" placeholder="Proveedor Fab" value="${item.proveedor_fab || ''}" onblur="actualizarEtapa(${item.id}, 'proveedor_fab', this.value)">` 
+            : '';
+
+        // Renderizado celda de Imagen con soporte para pegado (Ctrl+V)
+        const celdaImagen = item.imagen_url 
+            ? `<div class="img-cell" onclick="verImagenGrande('${item.imagen_url}')" title="Haz clic para ver grande / Selecciona y pega (Ctrl+V) para cambiar"><img src="${item.imagen_url}"></div>`
+            : `<div class="img-cell" onclick="seleccionarImagenArchivo(${item.id})" title="Haz clic para subir o selecciona la celda y presiona Ctrl+V para pegar"><span style="font-size:0.65rem; color:#64748b; text-align:center;">📋 Ctrl+V</span></div>`;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td tabindex="0" onpaste="manejarPegado(event, ${item.id})" style="outline:none;">${celdaImagen}</td>
+            <td><strong>${item.id_item}</strong><br><small style="color:#2563eb; font-weight:bold;">${item.proyecto_numero || '-'}</small></td>
+            <td>${item.material || '-'}</td>
+            <td>${item.cantidad}</td>
+            <td><input type="checkbox" ${item.pedido_mat_check == 1 ? 'checked' : ''} onchange="actualizarEtapa(${item.id}, 'pedido_mat_check', this.checked ? 1 : 0)">${fechaPed}</td>
+            <td><input type="checkbox" ${item.llegada_mat_check == 1 ? 'checked' : ''} onchange="actualizarEtapa(${item.id}, 'llegada_mat_check', this.checked ? 1 : 0)">${fechaLleg}</td>
+            <td>
+                <select style="width: 85px; font-size: 0.75rem;" onchange="actualizarEtapa(${item.id}, 'tipo_fabricacion', this.value)">
+                    <option value="INTERNA" ${item.tipo_fabricacion !== 'EXTERNA' ? 'selected' : ''}>INTERNA</option>
+                    <option value="EXTERNA" ${item.tipo_fabricacion === 'EXTERNA' ? 'selected' : ''}>EXTERNA</option>
+                </select>
+                ${inputProveedorFab}
+            </td>
+            <td><input type="checkbox" ${item.envio_fab_check == 1 ? 'checked' : ''} onchange="actualizarEtapa(${item.id}, 'envio_fab_check', this.checked ? 1 : 0)">${fechaEnvFab}</td>
+            <td><input type="checkbox" ${item.fin_fab_check == 1 ? 'checked' : ''} onchange="actualizarEtapa(${item.id}, 'fin_fab_check', this.checked ? 1 : 0)">${fechaFinFab}</td>
+            <td><strong style="color: ${colorFab}; font-size:0.7rem;">${estatusFab}</strong></td>
+            <td><input type="text" style="width:90px;" placeholder="Ej: Templado" value="${item.tipo_tratamiento || ''}" onblur="actualizarEtapa(${item.id}, 'tipo_tratamiento', this.value)"></td>
+            <td><input type="text" style="width:85px;" placeholder="Proveedor" value="${item.proveedor_tratamiento || ''}" onblur="actualizarEtapa(${item.id}, 'proveedor_tratamiento', this.value)"></td>
+            <td><input type="checkbox" ${item.envio_trat_check == 1 ? 'checked' : ''} onchange="actualizarEtapa(${item.id}, 'envio_trat_check', this.checked ? 1 : 0)">${fechaEnvTrat}</td>
+            <td><input type="checkbox" ${item.retorno_trat_check == 1 ? 'checked' : ''} onchange="actualizarEtapa(${item.id}, 'retorno_trat_check', this.checked ? 1 : 0)">${fechaRetTrat}</td>
+            <td><input type="checkbox" ${item.finalizado_check == 1 ? 'checked' : ''} onchange="actualizarEtapa(${item.id}, 'finalizado_check', this.checked ? 1 : 0)">${fechaFin}</td>
+            <td><div class="progress-bar"><div class="progress-fill" style="width: ${porcentaje}%;">${porcentaje}%</div></div></td>
+            <td>
+                <button class="btn-accion btn-edit" onclick="editarItem(${item.id}, '${item.proyecto_numero || ''}', '${item.id_item}', '${item.nombre_pieza || ''}', '${item.material || ''}', ${item.cantidad})">✏️</button>
+                <button class="btn-accion btn-del" onclick="eliminarItem(${item.id})">🗑</button>
+            </td>`;
+        
+        tbody.appendChild(tr);
+    });
+}
+
+async function actualizarEtapa(id, campo, valor) {
+    try {
+        await fetch(`/api/items/${id}/etapa`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ campo, valor })
+        });
+        cargarItems();
+    } catch (err) {
+        console.error('Error al actualizar:', err);
+    }
+}
+
+// Lógica de imágenes (Pegar / Cargar / Comprimir)
+function manejarPegado(e, id) {
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    for (let index in items) {
+        const item = items[index];
+        if (item.kind === 'file' && item.type.startsWith('image/')) {
+            const blob = item.getAsFile();
+            comprimirYGuardarImagen(id, blob);
         }
+    }
+}
 
-        function poblarSelectorProyectos() {
-            const selector = document.getElementById('filtroProyecto');
-            const valorSeleccionado = selector.value;
-            
-            const proyectos = [];
-            itemsGlobales.forEach(item => {
-                if (item.proyecto_numero && !proyectos.includes(item.proyecto_numero)) {
-                    proyectos.push(item.proyecto_numero);
+function seleccionarImagenArchivo(id) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+        if (e.target.files[0]) {
+            comprimirYGuardarImagen(id, e.target.files[0]);
+        }
+    };
+    input.click();
+}
+
+function comprimirYGuardarImagen(id, archivo) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const maxDim = 200; // Máximo 200px para liviandad total
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+                if (width > maxDim) {
+                    height *= maxDim / width;
+                    width = maxDim;
                 }
-            });
-
-            selector.innerHTML = '<option value="TODOS">-- Ver Todos los Proyectos --</option>';
-            proyectos.sort().forEach(prj => {
-                const option = document.createElement('option');
-                option.value = prj;
-                option.textContent = 'Proyecto: ' + prj;
-                if (prj === valorSeleccionado) option.selected = true;
-                selector.appendChild(option);
-            });
-        }
-
-        function filtrarPorProyecto() {
-            const proyecto = document.getElementById('filtroProyecto').value;
-            if (proyecto === 'TODOS') {
-                itemsFiltrados = itemsGlobales;
             } else {
-                itemsFiltrados = itemsGlobales.filter(item => item.proyecto_numero === proyecto);
-            }
-            actualizarDashboard();
-            renderizarTabla();
-        }
-
-        function actualizarDashboard() {
-            const total = itemsFiltrados.length;
-            if (total === 0) {
-                document.getElementById('kpiAvance').innerText = '0%';
-                document.getElementById('kpiTotal').innerText = '0';
-                document.getElementById('kpiProceso').innerText = '0';
-                document.getElementById('kpiEta').innerText = 'Sin datos';
-                document.getElementById('ganttAbast').style.width = '0%';
-                document.getElementById('txtAbast').innerText = '0%';
-                document.getElementById('ganttFab').style.width = '0%';
-                document.getElementById('txtFab').innerText = '0%';
-                document.getElementById('ganttTrat').style.width = '0%';
-                document.getElementById('txtTrat').innerText = '0%';
-                document.getElementById('ganttCal').style.width = '0%';
-                document.getElementById('txtCal').innerText = '0%';
-                return;
-            }
-
-            let sumaPorcentajes = 0;
-            let cAbast = 0, cFab = 0, cTrat = 0, cCal = 0, terminadas = 0;
-
-            itemsFiltrados.forEach(item => {
-                const p = calcularPorcentaje(item);
-                sumaPorcentajes += p;
-
-                if (item.llegada_mat_check == 1) cAbast++;
-                if (item.fin_fab_check == 1) cFab++;
-                if (item.retorno_trat_check == 1) cTrat++;
-                if (item.finalizado_check == 1) cCal++;
-                if (p === 100) terminadas++;
-            });
-
-            const avanceGeneral = Math.round(sumaPorcentajes / total);
-            
-            document.getElementById('kpiAvance').innerText = avanceGeneral + '%';
-            document.getElementById('kpiTotal').innerText = total;
-            document.getElementById('kpiProceso').innerText = total - terminadas;
-
-            if (avanceGeneral === 100) {
-                document.getElementById('kpiEta').innerText = "CONCLUIDO";
-            } else {
-                const diasEstimados = Math.ceil((100 - avanceGeneral) / 5);
-                const fechaFutura = new Date();
-                fechaFutura.setDate(fechaFutura.getDate() + diasEstimados);
-                document.getElementById('kpiEta').innerText = fechaFutura.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
-            }
-
-            document.getElementById('ganttAbast').style.width = Math.round((cAbast / total) * 100) + '%';
-            document.getElementById('txtAbast').innerText = Math.round((cAbast / total) * 100) + '%';
-
-            document.getElementById('ganttFab').style.width = Math.round((cFab / total) * 100) + '%';
-            document.getElementById('txtFab').innerText = Math.round((cFab / total) * 100) + '%';
-
-            document.getElementById('ganttTrat').style.width = Math.round((cTrat / total) * 100) + '%';
-            document.getElementById('txtTrat').innerText = Math.round((cTrat / total) * 100) + '%';
-
-            document.getElementById('ganttCal').style.width = Math.round((cCal / total) * 100) + '%';
-            document.getElementById('txtCal').innerText = Math.round((cCal / total) * 100) + '%';
-        }
-
-        function renderizarTabla() {
-            const tbody = document.getElementById('tablaItems');
-            tbody.innerHTML = '';
-
-            if (itemsFiltrados.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="16" style="padding:20px; color:#64748b;">No hay piezas registradas.</td></tr>';
-                return;
-            }
-
-            itemsFiltrados.forEach(item => {
-                const porcentaje = calcularPorcentaje(item);
-
-                const tr = document.createElement('tr');
-                
-                const fechaPed = (item.pedido_mat_check == 1 && item.fecha_pedido_mat) ? `<span class="fecha-tag">📅 ${item.fecha_pedido_mat}</span>` : '';
-                const fechaLleg = (item.llegada_mat_check == 1 && item.fecha_llegada_mat) ? `<span class="fecha-tag">📅 ${item.fecha_llegada_mat}</span>` : '';
-                const fechaEnvFab = (item.envio_fab_check == 1 && item.fecha_envio_fab) ? `<span class="fecha-tag">📅 ${item.fecha_envio_fab}</span>` : '';
-                const fechaFinFab = (item.fin_fab_check == 1 && item.fecha_fin_fab) ? `<span class="fecha-tag">📅 ${item.fecha_fin_fab}</span>` : '';
-                const fechaEnvTrat = (item.envio_trat_check == 1 && item.fecha_envio_trat) ? `<span class="fecha-tag">📅 ${item.fecha_envio_trat}</span>` : '';
-                const fechaRetTrat = (item.retorno_trat_check == 1 && item.fecha_retorno_trat) ? `<span class="fecha-tag">📅 ${item.fecha_retorno_trat}</span>` : '';
-                const fechaFin = (item.finalizado_check == 1 && item.fecha_finalizado) ? `<span class="fecha-tag">📅 ${item.fecha_finalizado}</span>` : '';
-
-                const estatusFab = (item.fin_fab_check == 1) ? 'TERMINADO' : ((item.envio_fab_check == 1) ? 'EN PROCESO' : 'PENDIENTE');
-                const colorFab = (item.fin_fab_check == 1) ? '#16a34a' : '#d97706';
-
-                const inputProveedorFab = (item.tipo_fabricacion === 'EXTERNA') 
-                    ? `<input type="text" style="width:90px; margin-top:3px;" placeholder="Proveedor Fab" value="${item.proveedor_fab || ''}" onblur="actualizarEtapa(${item.id}, 'proveedor_fab', this.value)">` 
-                    : '';
-
-                tr.innerHTML = `
-                    <td><strong>${item.id_item}</strong><br><small style="color:#2563eb; font-weight:bold;">${item.proyecto_numero || '-'}</small></td>
-                    <td>${item.material || '-'}</td>
-                    <td>${item.cantidad}</td>
-                    <td><input type="checkbox" ${item.pedido_mat_check == 1 ? 'checked' : ''} onchange="actualizarEtapa(${item.id}, 'pedido_mat_check', this.checked ? 1 : 0)">${fechaPed}</td>
-                    <td><input type="checkbox" ${item.llegada_mat_check == 1 ? 'checked' : ''} onchange="actualizarEtapa(${item.id}, 'llegada_mat_check', this.checked ? 1 : 0)">${fechaLleg}</td>
-                    <td>
-                        <select style="width: 85px; font-size: 0.75rem;" onchange="actualizarEtapa(${item.id}, 'tipo_fabricacion', this.value)">
-                            <option value="INTERNA" ${item.tipo_fabricacion !== 'EXTERNA' ? 'selected' : ''}>INTERNA</option>
-                            <option value="EXTERNA" ${item.tipo_fabricacion === 'EXTERNA' ? 'selected' : ''}>EXTERNA</option>
-                        </select>
-                        ${inputProveedorFab}
-                    </td>
-                    <td><input type="checkbox" ${item.envio_fab_check == 1 ? 'checked' : ''} onchange="actualizarEtapa(${item.id}, 'envio_fab_check', this.checked ? 1 : 0)">${fechaEnvFab}</td>
-                    <td><input type="checkbox" ${item.fin_fab_check == 1 ? 'checked' : ''} onchange="actualizarEtapa(${item.id}, 'fin_fab_check', this.checked ? 1 : 0)">${fechaFinFab}</td>
-                    <td><strong style="color: ${colorFab}; font-size:0.7rem;">${estatusFab}</strong></td>
-                    <td><input type="text" style="width:90px;" placeholder="Ej: Templado" value="${item.tipo_tratamiento || ''}" onblur="actualizarEtapa(${item.id}, 'tipo_tratamiento', this.value)"></td>
-                    <td><input type="text" style="width:85px;" placeholder="Proveedor" value="${item.proveedor_tratamiento || ''}" onblur="actualizarEtapa(${item.id}, 'proveedor_tratamiento', this.value)"></td>
-                    <td><input type="checkbox" ${item.envio_trat_check == 1 ? 'checked' : ''} onchange="actualizarEtapa(${item.id}, 'envio_trat_check', this.checked ? 1 : 0)">${fechaEnvTrat}</td>
-                    <td><input type="checkbox" ${item.retorno_trat_check == 1 ? 'checked' : ''} onchange="actualizarEtapa(${item.id}, 'retorno_trat_check', this.checked ? 1 : 0)">${fechaRetTrat}</td>
-                    <td><input type="checkbox" ${item.finalizado_check == 1 ? 'checked' : ''} onchange="actualizarEtapa(${item.id}, 'finalizado_check', this.checked ? 1 : 0)">${fechaFin}</td>
-                    <td><div class="progress-bar"><div class="progress-fill" style="width: ${porcentaje}%;">${porcentaje}%</div></div></td>
-                    <td>
-                        <button class="btn-accion btn-edit" onclick="editarItem(${item.id}, '${item.proyecto_numero || ''}', '${item.id_item}', '${item.nombre_pieza || ''}', '${item.material || ''}', ${item.cantidad})">✏️</button>
-                        <button class="btn-accion btn-del" onclick="eliminarItem(${item.id})">🗑</button>
-                    </td>`;
-                
-                tbody.appendChild(tr);
-            });
-        }
-
-        function calcularPorcentaje(item) {
-            let puntos = 0;
-            if (item.pedido_mat_check == 1) puntos++;
-            if (item.llegada_mat_check == 1) puntos++;
-            if (item.envio_fab_check == 1) puntos++;
-            if (item.fin_fab_check == 1) puntos++;
-            if (item.retorno_trat_check == 1 || item.tipo_tratamiento === 'N/A') puntos++;
-            if (item.finalizado_check == 1) puntos++;
-            return Math.round((puntos / 6) * 100);
-        }
-
-        function actualizarEtapa(id, campo, valor) {
-            fetch('/api/items/' + id + '/etapa', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ campo: campo, valor: valor })
-            }).then(res => {
-                if (res.ok) cargarItems();
-            });
-        }
-
-        function editarItem(id, proyectoNum, idItem, nombre, material, cantidad) {
-            const nuevoProyecto = prompt("Editar N° de Proyecto:", proyectoNum);
-            if (nuevoProyecto === null) return;
-
-            const nuevoNombre = prompt("Editar Nombre de la Pieza / Descripción:", nombre);
-            if (nuevoNombre === null) return;
-
-            const nuevoMat = prompt("Editar Material:", material);
-            if (nuevoMat === null) return;
-
-            const nuevaCant = prompt("Editar Cantidad:", cantidad);
-            if (nuevaCant === null) return;
-
-            actualizarEtapa(id, 'proyecto_numero', nuevoProyecto);
-            actualizarEtapa(id, 'nombre_pieza', nuevoNombre);
-            actualizarEtapa(id, 'material', nuevoMat);
-            actualizarEtapa(id, 'cantidad', parseInt(nuevaCant) || 1);
-        }
-
-        // Función de eliminación con Respaldo Automático
-        function eliminarItem(id) {
-            if (!confirm("¿Seguro que deseas eliminar esta pieza permanentemente?")) return;
-
-            // Intento 1: Ruta Estándar DELETE
-            fetch('/api/items/' + id, { method: 'DELETE' })
-            .then(res => {
-                if (!res.ok) throw new Error("Fallback required");
-                return res.json();
-            })
-            .then(() => cargarItems())
-            .catch(() => {
-                // Intento 2: Ruta de Respaldo GET (Imposible de bloquear)
-                fetch('/api/items/eliminar/' + id)
-                .then(res => res.json())
-                .then(() => cargarItems())
-                .catch(err => alert("Error al eliminar la pieza."));
-            });
-        }
-
-        function agregarItemManual(e) {
-            e.preventDefault();
-            const proyecto_numero = document.getElementById('numProyecto').value;
-            const id_item = document.getElementById('idItem').value;
-            const nombre_pieza = document.getElementById('nombrePieza').value;
-            const material = document.getElementById('material').value;
-            const cantidad = document.getElementById('cantidad').value;
-
-            fetch('/api/items/manual', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ proyecto_numero, id_item, nombre_pieza, material, cantidad })
-            }).then(res => {
-                if (res.ok) {
-                    document.getElementById('idItem').value = '';
-                    document.getElementById('nombrePieza').value = '';
-                    cargarItems();
+                if (height > maxDim) {
+                    width *= maxDim / height;
+                    height = maxDim;
                 }
-            });
-        }
+            }
 
-        window.onload = cargarItems;
-    </script>
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const base64Data = canvas.toDataURL('image/jpeg', 0.7);
+            actualizarEtapa(id, 'imagen_url', base64Data);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(archivo);
+}
+
+function verImagenGrande(url) {
+    const win = window.open("");
+    win.document.write(`<img src="${url}" style="max-width:100%; max-height:100vh; display:block; margin:auto;">`);
+}
+
+function actualizarEstadisticas() {
+    document.getElementById('statTotal').innerText = itemsGlobales.length;
+    
+    let terminados = 0;
+    let sumaPorcentaje = 0;
+
+    itemsGlobales.forEach(item => {
+        const p = calcularPorcentaje(item);
+        sumaPorcentaje += p;
+        if (p === 100) terminados++;
+    });
+
+    document.getElementById('statTerminados').innerText = terminados;
+    document.getElementById('statProceso').innerText = itemsGlobales.length - terminados;
+    
+    const avancePromedio = itemsGlobales.length > 0 ? Math.round(sumaPorcentaje / itemsGlobales.length) : 0;
+    document.getElementById('statAvance').innerText = avancePromedio + '%';
+}
+
+async function abrirModalNuevo() {
+    const id_item = prompt("ID de la Pieza / Item:");
+    if (!id_item) return;
+    const proyecto_numero = prompt("Número de Proyecto:") || '';
+    const material = prompt("Material:") || '';
+    const cantidad = parseInt(prompt("Cantidad:", "1")) || 1;
+
+    const nuevoItem = { id_item, proyecto_numero, material, cantidad };
+
+    await fetch('/api/items/manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(nuevoItem)
+    });
+
+    cargarItems();
+}
+
+async function editarItem(id, proyecto, item, nombre, material, cantidad) {
+    const nuevoItem = prompt("Editar ID Item / Pieza:", item);
+    if (nuevoItem === null) return;
+    const nuevoProyecto = prompt("Editar Número Proyecto:", proyecto);
+    const nuevoMat = prompt("Editar Material:", material);
+    const nuevaCant = parseInt(prompt("Editar Cantidad:", cantidad));
+
+    await fetch(`/api/items/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            id_item: nuevoItem,
+            proyecto_numero: nuevoProyecto,
+            material: nuevoMat,
+            cantidad: nuevaCant
+        })
+    });
+
+    cargarItems();
+}
+
+async function eliminarItem(id) {
+    if (confirm("¿Seguro que deseas eliminar esta pieza?")) {
+        await fetch(`/api/items/${id}`, { method: 'DELETE' });
+        cargarItems();
+    }
+}
+
+// Cargar al inicio
+cargarItems();
+</script>
+
 </body>
 </html>
