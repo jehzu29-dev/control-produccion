@@ -236,13 +236,20 @@
                     filtrarPorProyecto();
                 })
                 .catch(err => console.error("Error al cargar ítems:", err));
-        .stat-card {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            border-left: 4px solid #3b82f6;
-        }
+       function cargarItems() {
+    fetch('/api/items')
+        .then(res => res.json())
+        .then(data => {
+            itemsGlobales = data;
+            poblarSelectorProyectos();
+            filtrarPorProyecto();
+        })
+        .catch(err => console.error("Error al cargar ítems:", err));
+}
+
+function poblarSelectorProyectos() {
+    const selector = document.getElementById('filtroProyecto');
+    const valorSeleccionado = selector.value;
 
         function poblarSelectorProyectos() {
             const selector = document.getElementById('filtroProyecto');
