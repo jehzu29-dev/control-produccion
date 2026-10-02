@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AYM - Control de Producción y Gantt</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
+        body { background-color: #f1f5f9; color: #0f172a; padding: 20px; }
+
+        header {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 { font-size: 1.3rem; font-weight: 700; }
+        .subtitle { font-size: 0.8rem; color: #cbd5e1; margin-top: 2px; }
+
+        .selector-proyecto {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #2563eb;
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: 1px solid #60a5fa;
+        }
+        .selector-proyecto label { color: white; font-size: 0.85rem; font-weight: 700; margin: 0; }
+        .selector-proyecto select {
+            background: white; border: none; font-weight: bold; color: #0f172a;
+            padding: 5px 10px; border-radius: 6px; font-size: 0.85rem; cursor: pointer;
+        }
+
+        .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn {
+            background-color: #e2e8f0; color: #475569; padding: 10px 20px;
+            border: none; border-radius: 8px; font-weight: bold; font-size: 0.88rem;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .tab-btn.active {
+            background-color: #2563eb; color: white;
+            box-shadow: 0 2px 4px rgba(37,99,235,0.3);
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .kpi-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .kpi-card { background: white; padding: 16px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 5px solid #2563eb; }
+        .kpi-card h3 { font-size: 0.75rem; text-transform: uppercase; color: #64748b; margin-bottom: 5px; }
+        .kpi-card .number { font-size: 1.6rem; font-weight: 800; color: #0f172a; }
+        .kpi-card.green { border-left-color: #16a34a; }
+        .kpi-card.amber { border-left-color: #d97706; }
+        .kpi-card.purple { border-left-color: #9333ea; }
+
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        h2 { font-size: 1.05rem; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+
+        .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; align-items: end; }
+        label { font-weight: 600; font-size: 0.78rem; color: #475569; display: block; margin-bottom: 4px; }
+        input, select, button { padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.8rem; width: 100%; }
+        button { background-color: #2563eb; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { background-color: #1d4ed8; }
+
+        .table-container { overflow-x: auto; max-height: 65vh; border: 1px solid #e2e8f0; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.75rem; text-align: center; }
+        th, td { border: 1px solid #cbd5e1; padding: 6px 4px; white-space: nowrap; vertical-align: middle; }
+        th { background-color: #f8fafc; color: #1e293b; position: sticky; top: 0; z-index: 10; font-size: 0.72rem; }
+        th.group-header { text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.5px; }
+
+        .cell-flex { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
+        .cell-flex input[type="date"] { font-size: 0.68rem; padding: 2px 4px; width: 105px; height: 22px; text-align: center; border-radius: 4px; }
+        .cell-flex input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+
+        .progress-bar-container { width: 70px; background: #e2e8f0; border-radius: 10px; height: 16px; overflow: hidden; display: inline-block; }
+        .progress-fill { height: 100%; background: #16a34a; color: white; font-size: 0.65rem; font-weight: bold; line-height: 16px; text-align: center; }
+
+        .btn-accion { padding: 5px 8px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; margin: 0 2px; width: auto; display: inline-block; border: none; }
+        .btn-edit { background: #d97706; color: white; }
+        .btn-edit:hover { background: #b45309; }
+        .btn-del { background: #dc2626; color: white; }
+        .btn-del:hover { background: #b91c1c; }
+
+        /* Estilos de Gantt Visual con Fechas */
+        .gantt-legend { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; font-size: 0.8rem; font-weight: 600; }
+        .legend-item { display: flex; align-items: center; gap: 6px; }
+        .legend-box { width: 14px; height: 14px; border-radius: 3px; }
+
+        .gantt-table-wrapper { overflow-x: auto; border: 1px solid #cbd5e1; border-radius: 8px; }
+        .gantt-table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        .gantt-table th, .gantt-table td { border: 1px solid #e2e8f0; text-align: center; padding: 8px; }
+        .gantt-table th { background: #f8fafc; font-size: 0.72rem; font-weight: 700; color: #475569; position: sticky; top: 0; }
+        
+        .gantt-item-col { width: 220px; text-align: left !important; background: #ffffff; position: sticky; left: 0; z-index: 5; box-shadow: 2px 0 5px rgba(0,0,0,0.03); }
+        .gantt-timeline-cell { position: relative; padding: 0 !important; height: 48px; background: #fafafa; }
+
+        .gantt-bar-single {
+            position: absolute;
+            height: 26px;
+            top: 11px;
+            border-radius: 5px;
+            color: white;
+            font-size: 0.65rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+        .gantt-bar-single:hover { transform: scaleY(1.1); z-index: 20; }
+
+        .bg-mat { background-color: #d97706; }
+        .bg-fab { background-color: #0284c7; }
+        .bg-trat { background-color: #9333ea; }
+        .bg-fin { background-color: #16a34a; }
+
+        /* Modal de Edición */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-card { background: white; border-radius: 12px; width: 95%; max-width: 700px; max-height: 90vh; overflow-y: auto; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 20px; }
+        .modal-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .modal-section-title { grid-column: 1 / -1; font-size: 0.85rem; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 6px 10px; border-radius: 6px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div>
+            <h1>AYM Automatización y Maquinados Leal</h1>
+            <div class="subtitle">Control de Producción, Fechas y Trazabilidad por Pieza</div>
+        </div>
+        <div class="selector-proyecto">
+            <label for="filtroProyecto">📁 PROYECTO:</label>
+            <select id="filtroProyecto" onchange="filtrarPorProyecto()">
+                <option value="TODOS">-- Ver Todos los Proyectos --</option>
+            </select>
+        </div>
+    </header>
+
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="cambiarPestana('tabTrazabilidad')">📋 Matriz de Trazabilidad</button>
+        <button class="tab-btn" onclick="cambiarPestana('tabGantt')">📅 Diagrama de Gantt por Fechas</button>
+    </div>
+
+    <!-- PESTAÑA 1: TRAZABILIDAD -->
+    <div id="tabTrazabilidad" class="tab-content active">
+        <div class="kpi-container">
+            <div class="kpi-card green"><h3>Avance Global</h3><div class="number" id="kpiAvance">0%</div></div>
+            <div class="kpi-card"><h3>Total Piezas</h3><div class="number" id="kpiTotal">0</div></div>
+            <div class="kpi-card amber"><h3>En Proceso</h3><div class="number" id="kpiProceso">0</div></div>
+            <div class="kpi-card purple"><h3>Terminadas</h3><div class="number" id="kpiTerminadas">0</div></div>
+        </div>
+
+        <div class="card">
+            <h2>➕ Registrar Nueva Pieza</h2>
+            <form id="formManual" onsubmit="agregarItemManual(event)" class="grid-form">
+                <div><label>N° Proyecto *</label><input type="text" id="numProyecto" placeholder="Ej: PRJ-101" required></div>
+                <div><label>ID Item / Código *</label><input type="text" id="idItem" placeholder="Ej: PZA-01" required></div>
+                <div><label>Descripción / Nombre</label><input type="text" id="nombrePieza" placeholder="Ej: Flecha de Transmisión"></div>
+                <div><label>Material</label><input type="text" id="material" placeholder="Ej: Acer-4140"></div>
+                <div><label>Cantidad</label><input type="number" id="cantidad" value="1" min="1"></div>
+                <div><button type="submit" style="background:#16a34a;">➕ Guardar Pieza</button></div>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>🔍 Matriz de Trazabilidad</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th colspan="3" class="group-header" style="background:#e2e8f0;">Pieza</th>
+                            <th colspan="2" class="group-header" style="background:#fef3c7;">1. Material</th>
+                            <th colspan="4" class="group-header" style="background:#e0f2fe;">2. Fabricación</th>
+                            <th colspan="4" class="group-header" style="background:#f3e8ff;">3. Tratamiento Térmico</th>
+                            <th colspan="2" class="group-header" style="background:#dcfce7;">4. Cierre</th>
+                            <th rowspan="2">Acciones</th>
+                        </tr>
+                        <tr>
+                            <th>ID / Proyecto</th>
+                            <th>Material</th>
+                            <th>Cant.</th>
+                            
+                            <th>Pedido</th>
+                            <th>Llegada</th>
+
+                            <th>Tipo</th>
+                            <th>Envío / Inicio</th>
+                            <th>Fin Fab</th>
+                            <th>Estatus</th>
+
+                            <th>Tipo Trat.</th>
+                            <th>Proveedor</th>
+                            <th>Envío</th>
+                            <th>Retorno</th>
+
+                            <th>Finalizado</th>
+                            <th>% Avance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaItems">
+                        <tr><td colspan="16">Cargando datos...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- PESTAÑA 2: GANTT POR FECHAS -->
+    <div id="tabGantt" class="tab-content">
+        <div class="card">
+            <h2>📅 Cronograma de Producción (Gantt por Fechas)</h2>
+            <div class="gantt-legend">
+                <div class="legend-item"><div class="legend-box bg-mat"></div> 1. Material</div>
+                <div class="legend-item"><div class="legend-box bg-fab"></div> 2. Fabricación</div>
+                <div class="legend-item"><div class="legend-box bg-trat"></div> 3. Tratamiento</div>
+                <div class="legend-item"><div class="legend-box bg-fin"></div> 4. Cierre</div>
+            </div>
+
+            <div class="gantt-table-wrapper">
+                <table class="gantt-table">
+                    <thead>
+                        <tr id="ganttHeaderDays">
+                            <th class="gantt-item-col">Item / Pieza</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ganttBody">
+                        <tr><td colspan="10">No hay piezas para mostrar.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE EDICIÓN COMPLETO -->
+    <div class="modal-overlay" id="modalEditar">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 style="color:#0f172a;">✏️ Editar Pieza & Fechas de Trazabilidad</h3>
+                <button onclick="cerrarModal()" style="background:none; border:none; font-size:1.2rem; cursor:pointer; color:#64748b;">✖</button>
+            </div>
+            <form id="formModalEdit" onsubmit="guardarModalEdit(event)">
+                <input type="hidden" id="editId">
+                <div class="modal-grid">
+                    <div class="modal-section-title">Información General</div>
+                    <div><label>N° Proyecto</label><input type="text" id="editProyecto" required></div>
+                    <div><label>ID Item</label><input type="text" id="editIdItem" required></div>
+                    <div><label>Descripción / Nombre</label><input type="text" id="editNombre"></div>
+                    <div><label>Material</label><input type="text" id="editMaterial"></div>
+                    <div><label>Cantidad</label><input type="number" id="editCantidad" min="1"></div>
+
+                    <div class="modal-section-title">1. Material</div>
+                    <div><label>Fecha Pedido</label><input type="date" id="editFMatPed"></div>
+                    <div><label>Fecha Llegada</label><input type="date" id="editFMatLleg"></div>
+
+                    <div class="modal-section-title">2. Fabricación</div>
+                    <div>
+                        <label>Tipo Fabricación</label>
+                        <select id="editTipoFab" onchange="toggleModalProveedorFab()">
+                            <option value="INTERNA">INTERNA</option>
+                            <option value="EXTERNA">EXTERNA</option>
+                        </select>
+                    </div>
+                    <div id="modalContainerProvFab" style="display:none;"><label>Proveedor Fabricación</label><input type="text" id="editProvFab" placeholder="Nombre Proveedor"></div>
+                    <div><label>Fecha Envío / Inicio</label><input type="date" id="editFFabEnv"></div>
+                    <div><label>Fecha Fin Fabricación</label><input type="date" id="editFFabFin"></div>
+
+                    <div class="modal-section-title">3. Tratamiento Térmico</div>
+                    <div><label>Tipo Tratamiento</label><input type="text" id="editTipoTrat" placeholder="Ej: Templado"></div>
+                    <div><label>Proveedor Tratamiento</label><input type="text" id="editProvTrat"></div>
+                    <div><label>Fecha Envío</label><input type="date" id="editFTratEnv"></div>
+                    <div><label>Fecha Retorno</label><input type="date" id="editFTratRet"></div>
+
+                    <div class="modal-section-title">4. Cierre</div>
+                    <div><label>Fecha Finalización</label><input type="date" id="editFFin"></div>
+                </div>
+
+                <div style="margin-top:20px; display:flex; justify-content:flex-end; gap:10px;">
+                    <button type="button" onclick="cerrarModal()" style="background:#94a3b8; width:auto; padding:8px 16px;">Cancelar</button>
+                    <button type="submit" style="background:#16a34a; width:auto; padding:8px 20px;">💾 Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let itemsGlobales = JSON.parse(localStorage.getItem('items_produccion') || '[]');
+        let itemsFiltrados = [];
+
+        const mesesAbrev = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+        document.addEventListener("DOMContentLoaded", () => {
+            poblarSelectorProyectos();
+            filtrarPorProyecto();
+        });
+
+        function cambiarPestana(idTab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(idTab).classList.add('active');
+            event.target.classList.add('active');
+
+            if (idTab === 'tabGantt') renderizarGantt();
+        }
+
+        function guardarEnLocalStorage() {
+            localStorage.setItem('items_produccion', JSON.stringify(itemsGlobales));
+            poblarSelectorProyectos();
+            filtrarPorProyecto();
+        }
+
+        function poblarSelectorProyectos() {
+            const selector = document.getElementById('filtroProyecto');
+            const valor = selector.value;
+            const proyectos = [...new Set(itemsGlobales.map(i => i.proyecto_numero).filter(Boolean))];
+
+            selector.innerHTML = '<option value="TODOS">-- Ver Todos los Proyectos --</option>';
+            proyectos.sort().forEach(prj => {
+                const opt = document.createElement('option');
+                opt.value = prj;
+                opt.textContent = 'Proyecto: ' + prj;
+                if (prj === valor) opt.selected = true;
+                selector.appendChild(opt);
+            });
+        }
+
+        function filtrarPorProyecto() {
+            const prj = document.getElementById('filtroProyecto').value;
+            itemsFiltrados = (prj === 'TODOS') ? itemsGlobales : itemsGlobales.filter(i => i.proyecto_numero === prj);
+            actualizarDashboard();
+            renderizarTabla();
+            if (document.getElementById('tabGantt').classList.contains('active')) {
+                renderizarGantt();
+            }
+        }
+
+        function calcularPorcentaje(i) {
+            let p = 0;
+            if (i.pedido_mat_check) p++;
+            if (i.llegada_mat_check) p++;
+            if (i.envio_fab_check) p++;
+            if (i.fin_fab_check) p++;
+            if (i.retorno_trat_check || i.tipo_tratamiento === 'N/A') p++;
+            if (i.finalizado_check) p++;
+            return Math.round((p / 6) * 100);
+        }
+
+        function actualizarDashboard() {
+            const total = itemsFiltrados.length;
+            if (total === 0) {
+                document.getElementById('kpiAvance').innerText = '0%';
+                document.getElementById('kpiTotal').innerText = '0';
+                document.getElementById('kpiProceso').innerText = '0';
+                document.getElementById('kpiTerminadas').innerText = '0';
+                return;
+            }
+
+            let sumaP = 0, terminadas = 0;
+            itemsFiltrados.forEach(i => {
+                const p = calcularPorcentaje(i);
+                sumaP += p;
+                if (p === 100) terminadas++;
+            });
+
+            document.getElementById('kpiAvance').innerText = Math.round(sumaP / total) + '%';
+            document.getElementById('kpiTotal').innerText = total;
+            document.getElementById('kpiProceso').innerText = total - terminadas;
+            document.getElementById('kpiTerminadas').innerText = terminadas;
+        }
+
+        function renderizarTabla() {
+            const tbody = document.getElementById('tablaItems');
+            tbody.innerHTML = '';
+
+            if (itemsFiltrados.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="16" style="padding:20px; color:#64748b;">No hay piezas registradas.</td></tr>';
+                return;
+            }
+
+            itemsFiltrados.forEach(item => {
+                const p = calcularPorcentaje(item);
+                const tr = document.createElement('tr');
+
+                const showProvFab = item.tipo_fabricacion === 'EXTERNA' ? 'block' : 'none';
+
+                tr.innerHTML = `
+                    <td style="text-align:left; padding-left:10px;">
+                        <strong>${item.id_item}</strong><br>
+                        <small style="color:#2563eb; font-weight:bold;">${item.proyecto_numero}</small>
+                        ${item.nombre_pieza ? `<br><small style="color:#64748b;">${item.nombre_pieza}</small>` : ''}
+                    </td>
+                    <td>${item.material || '-'}</td>
+                    <td>${item.cantidad}</td>
+
+                    <!-- Material -->
+                    <td>
+                        <div class="cell-flex">
+                            <input type="checkbox" ${item.pedido_mat_check ? 'checked' : ''} onchange="toggleCheck(${item.id}, 'pedido_mat_check', 'fecha_pedido_mat', this.checked)">
+                            <input type="date" value="${item.fecha_pedido_mat || ''}" onchange="actualizarFecha(${item.id}, 'fecha_pedido_mat', this.value)">
+                        </div>
+                    </td>
+                    <td>
+                        <div class="cell-flex">
+                            <input type="checkbox" ${item.llegada_mat_check ? 'checked' : ''} onchange="toggleCheck(${item.id}, 'llegada_mat_check', 'fecha_llegada_mat', this.checked)">
+                            <input type="date" value="${item.fecha_llegada_mat || ''}" onchange="actualizarFecha(${item.id}, 'fecha_llegada_mat', this.value)">
+                        </div>
+                    </td>
+
+                    <!-- Fabricación -->
+                    <td>
+                        <select style="font-size:0.7rem; width:85px;" onchange="cambiarTipoFab(${item.id}, this.value)">
+                            <option value="INTERNA" ${item.tipo_fabricacion !== 'EXTERNA' ? 'selected' : ''}>INT</option>
+                            <option value="EXTERNA" ${item.tipo_fabricacion === 'EXTERNA' ? 'selected' : ''}>EXT</option>
+                        </select>
+                        <input type="text" placeholder="Proveedor" value="${item.proveedor_fab || ''}" 
+                               style="display:${showProvFab}; font-size:0.65rem; width:85px; margin-top:3px;" 
+                               onblur="actualizarEtapa(${item.id}, 'proveedor_fab', this.value)">
+                    </td>
+                    <td>
+                        <div class="cell-flex">
+                            <input type="checkbox" ${item.envio_fab_check ? 'checked' : ''} onchange="toggleCheck(${item.id}, 'envio_fab_check', 'fecha_envio_fab', this.checked)">
+                            <input type="date" value="${item.fecha_envio_fab || ''}" onchange="actualizarFecha(${item.id}, 'fecha_envio_fab', this.value)">
+                        </div>
+                    </td>
+                    <td>
+                        <div class="cell-flex">
+                            <input type="checkbox" ${item.fin_fab_check ? 'checked' : ''} onchange="toggleCheck(${item.id}, 'fin_fab_check', 'fecha_fin_fab', this.checked)">
+                            <input type="date" value="${item.fecha_fin_fab || ''}" onchange="actualizarFecha(${item.id}, 'fecha_fin_fab', this.value)">
+                        </div>
+                    </td>
+                    <td>
+                        <strong style="color:${item.fin_fab_check ? '#16a34a' : '#d97706'}; font-size:0.68rem;">
+                            ${item.fin_fab_check ? 'TERMINADO' : (item.envio_fab_check ? 'EN PROC' : 'PEND')}
+                        </strong>
+                    </td>
+
+                    <!-- Tratamiento -->
+                    <td><input type="text" style="width:75px; font-size:0.7rem;" placeholder="Ej: Templado" value="${item.tipo_tratamiento || ''}" onblur="actualizarEtapa(${item.id}, 'tipo_tratamiento', this.value)"></td>
+                    <td><input type="text" style="width:75px; font-size:0.7rem;" placeholder="Proveedor" value="${item.proveedor_tratamiento || ''}" onblur="actualizarEtapa(${item.id}, 'proveedor_tratamiento', this.value)"></td>
+                    <td>
+                        <div class="cell-flex">
+                            <input type="checkbox" ${item.envio_trat_check ? 'checked' : ''} onchange="toggleCheck(${item.id}, 'envio_trat_check', 'fecha_envio_trat', this.checked)">
+                            <input type="date" value="${item.fecha_envio_trat || ''}" onchange="actualizarFecha(${item.id}, 'fecha_envio_trat', this.value)">
+                        </div>
+                    </td>
+                    <td>
+                        <div class="cell-flex">
+                            <input type="checkbox" ${item.retorno_trat_check ? 'checked' : ''} onchange="toggleCheck(${item.id}, 'retorno_trat_check', 'fecha_retorno_trat', this.checked)">
+                            <input type="date" value="${item.fecha_retorno_trat || ''}" onchange="actualizarFecha(${item.id}, 'fecha_retorno_trat', this.value)">
+                        </div>
+                    </td>
+
+                    <!-- Cierre & Avance -->
+                    <td>
+                        <div class="cell-flex">
+                            <input type="checkbox" ${item.finalizado_check ? 'checked' : ''} onchange="toggleCheck(${item.id}, 'finalizado_check', 'fecha_finalizado', this.checked)">
+                            <input type="date" value="${item.fecha_finalizado || ''}" onchange="actualizarFecha(${item.id}, 'fecha_finalizado', this.value)">
+                        </div>
+                    </td>
+                    <td>
+                        <div class="progress-bar-container">
+                            <div class="progress-fill" style="width:${p}%;">${p}%</div>
+                        </div>
+                    </td>
+                    <td>
+                        <button class="btn-accion btn-edit" title="Editar" onclick="abrirModal(${item.id})">✏️</button>
+                        <button class="btn-accion btn-del" title="Eliminar" onclick="eliminarItem(${item.id})">🗑</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function cambiarTipoFab(id, valor) {
+            const item = itemsGlobales.find(i => i.id === id);
+            if (item) {
+                item.tipo_fabricacion = valor;
+                guardarEnLocalStorage();
+            }
+        }
+
+        function toggleCheck(id, campoCheck, campoFecha, isChecked) {
+            const item = itemsGlobales.find(i => i.id === id);
+            if (item) {
+                item[campoCheck] = isChecked;
+                if (isChecked && !item[campoFecha]) {
+                    item[campoFecha] = new Date().toISOString().split('T')[0];
+                }
+                guardarEnLocalStorage();
+            }
+        }
+
+        function actualizarFecha(id, campoFecha, valor) {
+            const item = itemsGlobales.find(i => i.id === id);
+            if (item) {
+                item[campoFecha] = valor;
+                guardarEnLocalStorage();
+            }
+        }
+
+        function actualizarEtapa(id, campo, valor) {
+            const item = itemsGlobales.find(i => i.id === id);
+            if (item) {
+                item[campo] = valor;
+                guardarEnLocalStorage();
+            }
+        }
+
+        function agregarItemManual(e) {
+            e.preventDefault();
+            const nuevo = {
+                id: Date.now(),
+                proyecto_numero: document.getElementById('numProyecto').value.trim(),
+                id_item: document.getElementById('idItem').value.trim(),
+                nombre_pieza: document.getElementById('nombrePieza').value.trim(),
+                material: document.getElementById('material').value.trim(),
+                cantidad: parseInt(document.getElementById('cantidad').value) || 1,
+                pedido_mat_check: false, fecha_pedido_mat: '',
+                llegada_mat_check: false, fecha_llegada_mat: '',
+                tipo_fabricacion: 'INTERNA', proveedor_fab: '',
+                envio_fab_check: false, fecha_envio_fab: '',
+                fin_fab_check: false, fecha_fin_fab: '',
+                tipo_tratamiento: '', proveedor_tratamiento: '',
+                envio_trat_check: false, fecha_envio_trat: '',
+                retorno_trat_check: false, fecha_retorno_trat: '',
+                finalizado_check: false, fecha_finalizado: ''
+            };
+
+            itemsGlobales.push(nuevo);
+            guardarEnLocalStorage();
+            document.getElementById('formManual').reset();
+        }
+
+        function eliminarItem(id) {
+            if (confirm("¿Estás seguro de eliminar esta pieza?")) {
+                itemsGlobales = itemsGlobales.filter(i => i.id !== id);
+                guardarEnLocalStorage();
+            }
+        }
+
+        function abrirModal(id) {
+            const item = itemsGlobales.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('editId').value = item.id;
+            document.getElementById('editProyecto').value = item.proyecto_numero || '';
+            document.getElementById('editIdItem').value = item.id_item || '';
+            document.getElementById('editNombre').value = item.nombre_pieza || '';
+            document.getElementById('editMaterial').value = item.material || '';
+            document.getElementById('editCantidad').value = item.cantidad || 1;
+
+            document.getElementById('editFMatPed').value = item.fecha_pedido_mat || '';
+            document.getElementById('editFMatLleg').value = item.fecha_llegada_mat || '';
+
+            document.getElementById('editTipoFab').value = item.tipo_fabricacion || 'INTERNA';
+            document.getElementById('editProvFab').value = item.proveedor_fab || '';
+            toggleModalProveedorFab();
+
+            document.getElementById('editFFabEnv').value = item.fecha_envio_fab || '';
+            document.getElementById('editFFabFin').value = item.fecha_fin_fab || '';
+
+            document.getElementById('editTipoTrat').value = item.tipo_tratamiento || '';
+            document.getElementById('editProvTrat').value = item.proveedor_tratamiento || '';
+            document.getElementById('editFTratEnv').value = item.fecha_envio_trat || '';
+            document.getElementById('editFTratRet').value = item.fecha_retorno_trat || '';
+
+            document.getElementById('editFFin').value = item.fecha_finalizado || '';
+
+            document.getElementById('modalEditar').style.display = 'flex';
+        }
+
+        function toggleModalProveedorFab() {
+            const tipo = document.getElementById('editTipoFab').value;
+            document.getElementById('modalContainerProvFab').style.display = (tipo === 'EXTERNA') ? 'block' : 'none';
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalEditar').style.display = 'none';
+        }
+
+        function guardarModalEdit(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('editId').value);
+            const item = itemsGlobales.find(i => i.id === id);
+
+            if (item) {
+                item.proyecto_numero = document.getElementById('editProyecto').value.trim();
+                item.id_item = document.getElementById('editIdItem').value.trim();
+                item.nombre_pieza = document.getElementById('editNombre').value.trim();
+                item.material = document.getElementById('editMaterial').value.trim();
+                item.cantidad = parseInt(document.getElementById('editCantidad').value) || 1;
+
+                item.fecha_pedido_mat = document.getElementById('editFMatPed').value;
+                item.fecha_llegada_mat = document.getElementById('editFMatLleg').value;
+                item.pedido_mat_check = !!item.fecha_pedido_mat;
+                item.llegada_mat_check = !!item.fecha_llegada_mat;
+
+                item.tipo_fabricacion = document.getElementById('editTipoFab').value;
+                item.proveedor_fab = document.getElementById('editProvFab').value.trim();
+                item.fecha_envio_fab = document.getElementById('editFFabEnv').value;
+                item.fecha_fin_fab = document.getElementById('editFFabFin').value;
+                item.envio_fab_check = !!item.fecha_envio_fab;
+                item.fin_fab_check = !!item.fecha_fin_fab;
+
+                item.tipo_tratamiento = document.getElementById('editTipoTrat').value.trim();
+                item.proveedor_tratamiento = document.getElementById('editProvTrat').value.trim();
+                item.fecha_envio_trat = document.getElementById('editFTratEnv').value;
+                item.fecha_retorno_trat = document.getElementById('editFTratRet').value;
+                item.envio_trat_check = !!item.fecha_envio_trat;
+                item.retorno_trat_check = !!item.fecha_retorno_trat;
+
+                item.fecha_finalizado = document.getElementById('editFFin').value;
+                item.finalizado_check = !!item.fecha_finalizado;
+
+                guardarEnLocalStorage();
+                cerrarModal();
+            }
+        }
+
+        function renderizarGantt() {
+            const headerTr = document.getElementById('ganttHeaderDays');
+            const tbody = document.getElementById('ganttBody');
+
+            headerTr.innerHTML = '<th class="gantt-item-col">Item / Pieza</th>';
+            tbody.innerHTML = '';
+
+            if (itemsFiltrados.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" style="padding:20px;">No hay piezas registradas.</td></tr>';
+                return;
+            }
+
+            let todasFechas = [];
+            itemsFiltrados.forEach(i => {
+                if (i.fecha_pedido_mat) todasFechas.push(i.fecha_pedido_mat);
+                if (i.fecha_llegada_mat) todasFechas.push(i.fecha_llegada_mat);
+                if (i.fecha_envio_fab) todasFechas.push(i.fecha_envio_fab);
+                if (i.fecha_fin_fab) todasFechas.push(i.fecha_fin_fab);
+                if (i.fecha_envio_trat) todasFechas.push(i.fecha_envio_trat);
+                if (i.fecha_retorno_trat) todasFechas.push(i.fecha_retorno_trat);
+                if (i.fecha_finalizado) todasFechas.push(i.fecha_finalizado);
+            });
+
+            const hoyStr = new Date().toISOString().split('T')[0];
+            todasFechas.push(hoyStr);
+            todasFechas.sort();
+
+            let minFecha = new Date(todasFechas[0]);
+            let maxFecha = new Date(todasFechas[todasFechas.length - 1]);
+
+            minFecha.setDate(minFecha.getDate() - 1);
+            maxFecha.setDate(maxFecha.getDate() + 3);
+
+            let diasRango = [];
+            let curr = new Date(minFecha);
+            while (curr <= maxFecha) {
+                diasRango.push(new Date(curr));
+                curr.setDate(curr.getDate() + 1);
+            }
+
+            diasRango.forEach(d => {
+                const th = document.createElement('th');
+                const diaPad = String(d.getDate()).padStart(2, '0');
+                const mesAbrev = mesesAbrev[d.getMonth()];
+                th.innerText = `${diaPad}/${mesAbrev}`;
+                th.style.minWidth = "42px";
+                headerTr.appendChild(th);
+            });
+
+            const totalDias = diasRango.length;
+
+            itemsFiltrados.forEach(item => {
+                const tr = document.createElement('tr');
+
+                const tdItem = document.createElement('td');
+                tdItem.className = 'gantt-item-col';
+                tdItem.innerHTML = `
+                    <strong>${item.id_item}</strong><br>
+                    <small style="color:#2563eb; font-weight:bold;">${item.proyecto_numero}</small>
+                    ${item.nombre_pieza ? `<br><small style="color:#64748b;">${item.nombre_pieza}</small>` : ''}
+                `;
+                tr.appendChild(tdItem);
+
+                const tdTimeline = document.createElement('td');
+                tdTimeline.className = 'gantt-timeline-cell';
+                tdTimeline.colSpan = totalDias;
+
+                const etapas = [
+                    { nombre: '1. Material', ini: item.fecha_pedido_mat, fin: item.fecha_llegada_mat, clase: 'bg-mat' },
+                    { nombre: '2. Fabricación' + (item.proveedor_fab ? ` (${item.proveedor_fab})` : ''), ini: item.fecha_envio_fab, fin: item.fecha_fin_fab, clase: 'bg-fab' },
+                    { nombre: '3. Tratamiento' + (item.proveedor_tratamiento ? ` (${item.proveedor_tratamiento})` : ''), ini: item.fecha_envio_trat, fin: item.fecha_retorno_trat, clase: 'bg-trat' },
+                    { nombre: '4. Cierre', ini: item.fecha_finalizado, fin: item.fecha_finalizado, clase: 'bg-fin' }
+                ];
+
+                etapas.forEach(et => {
+                    if (et.ini) {
+                        const inicioDate = new Date(et.ini);
+                        const finDate = et.fin ? new Date(et.fin) : new Date(et.ini);
+
+                        const diffInicio = Math.max(0, Math.round((inicioDate - minFecha) / (1000 * 60 * 60 * 24)));
+                        const duracion = Math.max(1, Math.round((finDate - inicioDate) / (1000 * 60 * 60 * 24)) + 1);
+
+                        const leftPercent = (diffInicio / totalDias) * 100;
+                        const widthPercent = (duracion / totalDias) * 100;
+
+                        const bar = document.createElement('div');
+                        bar.className = `gantt-bar-single ${et.clase}`;
+                        bar.style.left = `${leftPercent}%`;
+                        bar.style.width = `${widthPercent}%`;
+                        bar.innerText = et.nombre;
+                        bar.title = `${et.nombre}\nInicio: ${et.ini}\nFin: ${et.fin || et.ini}`;
+
+                        tdTimeline.appendChild(bar);
+                    }
+                });
+
+                tr.appendChild(tdTimeline);
+                tbody.appendChild(tr);
+            });
+        }
+    </script>
+</body>
+</html>
